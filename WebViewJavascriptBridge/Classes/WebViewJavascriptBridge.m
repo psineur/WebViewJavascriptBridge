@@ -133,7 +133,6 @@ static NSString* QUEUE_HAS_MESSAGE = @"queuehasmessage";
     self.startupMessageQueue = nil;
 }
 
-
 - (BOOL)webView:(UIWebView *)theWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
     NSURL *url = [request URL];
     if (![[url scheme] isEqualToString:CUSTOM_PROTOCOL_SCHEME]) { return YES; }
