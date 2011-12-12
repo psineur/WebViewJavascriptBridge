@@ -13,6 +13,8 @@
 
 @synthesize delegate = _delegate;
 @synthesize startupMessageQueue = _startupMessageQueue;
+@synthesize jsObjectName = _jsObjectName;
+@synthesize jsObjectMethodName = _jsObjectMethodName;
 
 static NSString* MESSAGE_SEPERATOR = @"__wvjb_sep__";
 static NSString* CUSTOM_PROTOCOL_SCHEME = @"webviewjavascriptbridge";
@@ -28,6 +30,8 @@ static NSString* QUEUE_HAS_MESSAGE = @"queuehasmessage";
     if ( (self = [super init]) )
     {
         self.startupMessageQueue = [[NSMutableArray new] autorelease];
+        self.jsObjectName = @"WebViewJavascriptBridge";
+        self.jsObjectMethodName = @"sendMessage";
     }
     
     return self;
@@ -54,9 +58,9 @@ static NSString* QUEUE_HAS_MESSAGE = @"queuehasmessage";
 }
 
 - (void)webViewDidFinishLoad:(UIWebView *)theWebView {
-    NSString* js;
-    js = [NSString stringWithFormat:@";(function() {"
-          "if (window.WebViewJavascriptBridge) { return; };"
+    NSMutableString* js = nil;
+    js = [NSMutableString stringWithFormat:@";(function() {"
+          "if (window.%@) { return; };"
           "var _readyMessageIframe,"
           "     _sendMessageQueue = [],"
           "     _receiveMessageQueue = [],"
@@ -82,8 +86,8 @@ static NSString* QUEUE_HAS_MESSAGE = @"queuehasmessage";
           "};"
           ""
           "function _setMessageHandler(messageHandler) {"
-          "     if (WebViewJavascriptBridge._messageHandler) { return alert('WebViewJavascriptBridge.setMessageHandler called twice'); }"
-          "     WebViewJavascriptBridge._messageHandler = messageHandler;"
+          "     if (%@._messageHandler) { return alert('WebViewJavascriptBridge.setMessageHandler called twice'); }"
+          "     %@._messageHandler = messageHandler;"
           "     var receivedMessages = _receiveMessageQueue;"
           "     _receiveMessageQueue = null;"
           "     for (var i=0; i<receivedMessages.length; i++) {"
@@ -93,12 +97,12 @@ static NSString* QUEUE_HAS_MESSAGE = @"queuehasmessage";
           ""
           "function _handleMessageFromObjC(message) {"
           "     if (_receiveMessageQueue) { _receiveMessageQueue.push(message); }"
-          "     else { WebViewJavascriptBridge._messageHandler(message); }"
+          "     else { %@._messageHandler(message); }"
           "};"
           ""
-          "window.WebViewJavascriptBridge = {"
+          "window.%@ = {"
           "     setMessageHandler: _setMessageHandler,"
-          "     sendMessage: _sendMessage,"
+          "     %@: _sendMessage,"
           "     _fetchQueue: _fetchQueue,"
           "     _handleMessageFromObjC: _handleMessageFromObjC"
           "};"
@@ -111,10 +115,16 @@ static NSString* QUEUE_HAS_MESSAGE = @"queuehasmessage";
           "     doc.dispatchEvent(readyEvent);"
           "}, 0);"
           "})();",
+          self.jsObjectName,
           MESSAGE_SEPERATOR,
           CUSTOM_PROTOCOL_SCHEME,
-          QUEUE_HAS_MESSAGE];
-    
+          QUEUE_HAS_MESSAGE,
+          self.jsObjectName,
+          self.jsObjectName,
+          self.jsObjectName,
+          self.jsObjectName,
+          self.jsObjectMethodName ];
+        
     [theWebView stringByEvaluatingJavaScriptFromString:js];
     
     for (id message in self.startupMessageQueue) {
@@ -137,8 +147,9 @@ static NSString* QUEUE_HAS_MESSAGE = @"queuehasmessage";
     return NO;
 }
 
+
 - (void) _flushMessageQueueFromWebView: (UIWebView *) theWebView {
-    NSString* messageQueueString = [theWebView stringByEvaluatingJavaScriptFromString:@"WebViewJavascriptBridge._fetchQueue();"];
+    NSString* messageQueueString = [theWebView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"%@._fetchQueue();", self.jsObjectName]];
     NSArray* messages = [messageQueueString componentsSeparatedByString:MESSAGE_SEPERATOR];
     for (id message in messages) {
         [self.delegate handleMessage:message fromWebView: theWebView];

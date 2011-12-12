@@ -9,10 +9,27 @@
 @interface WebViewJavascriptBridge : NSObject <UIWebViewDelegate> {
     id <WebViewJavascriptBridgeDelegate> _delegate;
     NSMutableArray *_startupMessageQueue;
+    
+    NSString *_jsObjectName;
+    NSString *_jsObjectMethodName;
 }
 
 /** Delegate to receive messages from javascript. */
 @property (readwrite, assign) id <WebViewJavascriptBridgeDelegate> delegate;
+
+/** Name of object in javascript, that javascript can use to send messages.
+ * Default is "WebViewJavascriptBridge".
+ * In order to integrate properly - set this property before receiving webViewDidFinishLoad: 
+ * from webView.
+ */
+@property(readwrite, copy) NSString *jsObjectName;
+
+/** Name of method in javascript, that javascript can use to send messages.
+ * Default is "sendMessage".
+ * In order to integrate properly - set this property before receiving webViewDidFinishLoad: 
+ * from webView.
+ */
+@property(readwrite, copy) NSString *jsObjectMethodName;
 
 /** Creates & returns new autoreleased javascript Bridge with no delegate set. */
 + (id) javascriptBridge;
